@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Transfer Out</title>
+<style>
+body { font-family: Arial; padding: 30px; text-align: center; }
+h2 { margin-bottom: 20px; }
+select, input { padding: 5px; font-size: 16px; margin: 5px; }
+table { margin: 20px auto; border-collapse: collapse; width: 80%; }
+th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+button { padding: 10px 20px; font-size: 16px; margin: 10px; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<h2>Transfer Out</h2>
+
+<div id="userinfo"></div>
+
+<label>From Branch: 
+  <select id="fromBranch"></select>
+</label>
+
+<label>To Branch: 
+  <select id="toBranch"></select>
+</label>
+
+<br><br>
+
+<button id="scanBtn">Scan QR Code</button>
+
+<table id="qrTable">
+<thead>
+<tr><th>QR Code</th><th>Quantity</th></tr>
+</thead>
+<tbody></tbody>
+</table>
+
+<button id="saveBtn">Save to Local Storage</button>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+// ===== 登录状态检查 =====
+const nickname = localStorage.getItem("nickname");
+const branch = localStorage.getItem("branch");
+if (!nickname || !branch){
+    alert("You are not logged in!");
+    window.location.href = "index.html";
+}
+document.getElementById("userinfo").innerText = `Logged in as: ${nickname} | Branch: ${branch}`;
+
+// ===== 填充分行选项 =====
+// 一行定义所有分支，逗号分隔
+const branchList = "KL,PAHANG,PUCHONG"; 
+const fromSelect = document.getElementById("fromBranch");
+const toSelect = document.getElementById("toBranch");
+
+// 生成 option
+branchList.split(",").forEach(b => {
+    const option1 = document.createElement("option");
+    option1.value = b;
+    option1.text = b;
+    if (b === branch) option1.selected = true;
+    fromSelect.add(option1);
+
+    const option2 = document.createElement("option");
+    option2.value = b;
+    option2.text = b;
+    toSelect.add(option2);
+});
+
+// ===== QR 扫描 =====
+const tableBody = document.querySelector("#qrTable tbody");
+document.getElementById("scanBtn").addEventListener("click", async () => {
+    const qrRegionId = "qr-reader";
+    let qrRegion = document.getElementById(qrRegionId);
+    if (!qrRegion) {
+        qrRegion = document.createElement("div");
+        qrRegion.id = qrRegionId;
+        qrRegion.style.marginTop = "20px";
+        document.body.appendChild(qrRegion);
+    }
+
+    const html5QrCode = new Html5Qrcode(qrRegionId);
+    const config = { fps: 10, qrbox: 250 };
+
+    try {
+        await html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            (decodedText) => {
+                addRow(decodedText, 5);
+                html5QrCode.stop();
+                qrRegion.remove();
+            },
+            (errorMessage) => {
+                console.log("QR scan error", errorMessage);
+            }
+        );
+    } catch (err) {
+        alert("Cannot start camera: " + err);
+    }
+});
+
+// ===== 添加行函数 =====
+function addRow(qr, quantity) {
+    const tr = document.createElement("tr");
+    const tdQR = document.createElement("td");
+    tdQR.innerText = qr;
+
+    const tdQty = document.createElement("td");
+    const input = document.createElement("input");
+    input.type = "number";
+    input.value = quantity;
+    input.min = 0;
+    tdQty.appendChild(input);
+
+    tr.appendChild(tdQR);
+    tr.appendChild(tdQty);
+    tableBody.appendChild(tr);
+}
+
+// ===== 保存到 localStorage =====
+document.getElementById("saveBtn").addEventListener("click", () => {
+    const data = {
+        datetime: new Date().toISOString(),
+        nickname: nickname,
+        fromBranch: fromSelect.value,
+        toBranch: toSelect.value,
+        items: []
+    };
+
+    tableBody.querySelectorAll("tr").forEach(tr => {
+        const qr = tr.cells[0].innerText;
+        const qty = Number(tr.cells[1].querySelector("input").value);
+        data.items.push({ qr, quantity: qty });
+    });
+
+    // 生成 key 名称，格式：mbstnsystemFromBranchtoToBranch_datetime.json
+    const fileName = `mbstnsystem${data.fromBranch}to${data.toBranch}_${new Date().toISOString().replace(/[:.]/g,"-")}.json`;
+
+    localStorage.setItem(fileName, JSON.stringify(data));
+    alert(`Saved to Local Storage!\nKey: ${fileName}`);
+});
+</script>
+
+</body>
+</html>

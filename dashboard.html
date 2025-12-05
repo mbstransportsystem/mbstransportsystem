@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>MBS TRANSPORT DASHBOARD</title>
+<style>
+body { font-family: Arial; padding: 30px; text-align: center; }
+h2 { margin-bottom: 20px; }
+button { padding: 15px 30px; font-size: 18px; margin: 10px; cursor: pointer; }
+#userinfo { margin-bottom: 30px; font-size: 20px; }
+</style>
+</head>
+<body>
+
+<div id="userinfo"></div>
+
+<button id="transferOutBtn">Transfer Out</button>
+<button id="transferInBtn">Transfer In</button>
+<br><br>
+<button id="logoutBtn" style="padding:10px 20px;font-size:16px;">Logout</button>
+
+<script>
+// 检查登录状态
+const nickname = localStorage.getItem("nickname");
+const branch = localStorage.getItem("branch");
+
+if(!nickname || !branch){
+    alert("You are not logged in!");
+    window.location.href = "index.html";
+}
+
+// 显示用户信息
+document.getElementById("userinfo").innerText = `Logged in as: ${nickname} | Branch: ${branch}`;
+
+// 按钮跳转
+document.getElementById("transferOutBtn").addEventListener("click", () => {
+    window.location.href = "transferout.html";
+});
+
+document.getElementById("transferInBtn").addEventListener("click", () => {
+    window.location.href = "transferin.html";
+});
+
+// Logout 清除 localStorage
+document.getElementById("logoutBtn").addEventListener("click", () => {
+    localStorage.removeItem("nickname");
+    localStorage.removeItem("branch");
+    window.location.href = "mbstransport.html
+.html";
+});
+</script>
+
+</body>
+</html>

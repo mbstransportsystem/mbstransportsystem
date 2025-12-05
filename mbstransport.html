@@ -1,74 +1,86 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Login</title>
-<style>
-  body {
-    font-family: Arial;
-    background: #111;
-    color: white;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-  }
-  .box {
-    width: 300px;
-    background: #222;
-    padding: 20px;
-    border-radius: 10px;
-  }
-  input, button {
-    width: 100%;
-    padding: 10px;
-    margin-top: 10px;
-    border-radius: 6px;
-    border: none;
-  }
-  button {
-    background: #4a90e2;
-    color: white;
-    cursor: pointer;
-  }
-</style>
+  <meta charset="UTF-8">
+  <title>Login & Register</title>
+  <style>
+    .box { display: none; }
+    .active { display: block; }
+  </style>
 </head>
 <body>
 
-<div class="box">
-  <h2 style="text-align:center;">Login</h2>
-
-  <input id="nickname" placeholder="Nickname">
-  <input id="password" placeholder="Password" type="password">
+<!-- LOGIN -->
+<div id="loginBox" class="box active">
+  <h2>Login</h2>
+  <input id="loginNick" placeholder="Nickname"><br>
+  <input id="loginPass" type="password" placeholder="Password"><br>
   <button onclick="login()">Login</button>
+  <br><br>
+  <a href="#" onclick="switchBox('registerBox')">Go to Register</a>
+</div>
 
-  <p id="result" style="text-align:center;margin-top:10px;"></p>
+<!-- REGISTER -->
+<div id="registerBox" class="box">
+  <h2>TANYA ADMIN UNTUK REGISTER</h2>
+  <a href="#" onclick="switchBox('loginBox')">Back to Login</a>
 </div>
 
 <script>
-async function login() {
-  const nickname = document.getElementById("nickname").value;
-  const password = document.getElementById("password").value;
+// ===== 切换登录/注册 =====
+function switchBox(id) {
+  document.querySelectorAll('.box').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
 
-  const res = await fetch("https://script.google.com/macros/s/AKfycbz2vbEE8RJEPlgbmyVfObQ9CcAjFki4drcaJqa_BbGqcjk7bVoQ_OqItwUie7VgDS4tIw/exec", {
+// ===== Google Apps Script Web App URL =====
+const API = "https://script.google.com/macros/s/AKfycbz2vbEE8RJEPlgbmyVfObQ9CcAjFki4drcaJqa_BbGqcjk7bVoQ_OqItwUie7VgDS4tIw/exec";
+
+// ===== REGISTER =====
+function register() {
+  let nick = document.getElementById("regNick").value.trim();
+  let pass = document.getElementById("regPass").value;
+  let pass2 = document.getElementById("regPass2").value;
+
+  if (!nick || !pass) return alert("Please fill in all fields");
+  if (pass !== pass2) return alert("Passwords do not match");
+
+  fetch(API, {
     method: "POST",
-    body: JSON.stringify({ nickname, password }),
-    headers: { "Content-Type": "application/json" }
+    body: JSON.stringify({
+      action: "register",
+      nickname: nick,
+      password: pass
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    alert(data.message);
+    if (data.status === "ok") switchBox("loginBox");
   });
+}
 
-  const data = await res.json();
+// ===== LOGIN =====
+function login() {
+  let nick = document.getElementById("loginNick").value.trim();
+  let pass = document.getElementById("loginPass").value;
 
-  if (data.success) {
-    document.getElementById("result").innerHTML =
-      "✔ 登录成功，Branch: " + data.branch;
+  if (!nick || !pass) return alert("Please enter nickname & password");
 
-    // 登录成功跳转，例如 home.html
-    // location.href = "home.html?branch=" + encodeURIComponent(data.branch);
-  } else {
-    document.getElementById("result").innerHTML = "❌ 用户名或密码错误";
-  }
+  fetch(API + "?action=login&nickname=" + nick + "&password=" + pass)
+    .then(r => r.json())
+    .then(data => {
+
+      if (data.status !== "ok") return alert(data.message);
+
+      // 保存用户数据到 localStorage（跨页面保持登录）
+      localStorage.setItem("nickname", data.user.nickname);
+      localStorage.setItem("branch", data.user.branch);
+
+      // 跳转到 dashboard
+      window.location.href = "dashboard.html";
+    });
 }
 </script>
-
 </body>
 </html>

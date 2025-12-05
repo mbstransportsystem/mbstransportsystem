@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Edit Transfer</title>
+<style>
+body { font-family: Arial; padding: 30px; text-align: center; }
+h2 { margin-bottom: 20px; }
+select, input, button { padding: 5px; font-size: 16px; margin: 5px; }
+table { margin: 20px auto; border-collapse: collapse; width: 80%; }
+th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+button { padding: 8px 15px; font-size: 16px; cursor: pointer; margin: 5px; }
+</style>
+</head>
+<body>
+
+<h2>Edit Transfer</h2>
+
+<div id="userinfo"></div>
+
+<label>Select JSON: 
+  <select id="jsonSelect">
+    <option value="">-- Select JSON --</option>
+  </select>
+</label>
+<button id="loadBtn">Load JSON</button>
+
+<br><br>
+
+<table id="editTable">
+<thead>
+<tr><th>QR Code</th><th>Quantity</th><th>Action</th></tr>
+</thead>
+<tbody></tbody>
+</table>
+
+<button id="saveBtn">Save Changes</button>
+<button id="deleteJsonBtn" style="background:#f55;color:white;">Delete Entire JSON</button>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+// ===== 登录状态检查 =====
+const nickname = localStorage.getItem("nickname");
+const branch = localStorage.getItem("branch");
+if (!nickname || !branch){
+    alert("You are not logged in!");
+    window.location.href = "index.html";
+}
+document.getElementById("userinfo").innerText = `Logged in as: ${nickname} | Branch: ${branch}`;
+
+const tableBody = document.querySelector("#editTable tbody");
+const jsonSelect = document.getElementById("jsonSelect");
+let currentJsonKey = "";
+
+// ===== 扫描 localStorage 自动列出所有 mbstnsystem JSON =====
+for (let i=0; i<localStorage.length; i++){
+    const key = localStorage.key(i);
+    if (key.startsWith("mbstnsystem")){
+        const option = document.createElement("option");
+        option.value = key;
+        option.text = key;
+        jsonSelect.add(option);
+    }
+}
+
+// ===== 添加行到表格 =====
+function addRow(qr, quantity){
+    const tr = document.createElement("tr");
+
+    const tdQR = document.createElement("td");
+    tdQR.innerText = qr;
+
+    const tdQty = document.createElement("td");
+    const input = document.createElement("input");
+    input.type = "number";
+    input.value = quantity;
+    input.min = 0;
+    tdQty.appendChild(input);
+
+    const tdAction = document.createElement("td");
+    const delBtn = document.createElement("button");
+    delBtn.innerText = "Delete Row";
+    delBtn.style.background="#f55";
+    delBtn.style.color="white";
+    delBtn.addEventListener("click", ()=> tr.remove());
+    tdAction.appendChild(delBtn);
+
+    tr.appendChild(tdQR);
+    tr.appendChild(tdQty);
+    tr.appendChild(tdAction);
+    tableBody.appendChild(tr);
+}
+
+// ===== Load JSON =====
+document.getElementById("loadBtn").addEventListener("click", ()=>{
+    const key = jsonSelect.value;
+    if(!key) return alert("Select a JSON first!");
+    const jsonStr = localStorage.getItem(key);
+    if(!jsonStr) return alert("JSON not found in localStorage!");
+    currentJsonKey = key;
+
+    // 清空表格
+    tableBody.innerHTML = "";
+
+    const data = JSON.parse(jsonStr);
+    if(data.items && Array.isArray(data.items)){
+        data.items.forEach(item=>{
+            addRow(item.qr, item.quantity);
+        });
+    }
+});
+
+// ===== Save Changes =====
+document.getElementById("saveBtn").addEventListener("click", ()=>{
+    if(!currentJsonKey) return alert("Load a JSON first!");
+    const updated = {
+        datetime: new Date().toISOString(),
+        nickname: nickname,
+        fromBranch: "",
+        toBranch: "",
+        items: []
+    };
+    const origData = JSON.parse(localStorage.getItem(currentJsonKey));
+    updated.fromBranch = origData.fromBranch;
+    updated.toBranch = origData.toBranch;
+
+    tableBody.querySelectorAll("tr").forEach(tr=>{
+        const qr = tr.cells[0].innerText;
+        const qty = Number(tr.cells[1].querySelector("input").value);
+        updated.items.push({qr, quantity: qty});
+    });
+
+    localStorage.setItem(currentJsonKey, JSON.stringify(updated));
+    alert("JSON updated successfully!");
+});
+
+// ===== Delete Entire JSON =====
+document.getElementById("deleteJsonBtn").addEventListener("click", ()=>{
+    if(!currentJsonKey) return alert("Load a JSON first!");
+    if(confirm("Are you sure to delete entire JSON?")){
+        localStorage.removeItem(currentJsonKey);
+        tableBody.innerHTML = "";
+        // 从 select 中移除
+        for (let i=0; i<jsonSelect.options.length; i++){
+            if(jsonSelect.options[i].value === currentJsonKey){
+                jsonSelect.remove(i);
+                break;
+            }
+        }
+        currentJsonKey = "";
+        alert("JSON deleted!");
+    }
+});
+</script>
+
+</body>
+</html>
