@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Login</title>
+<style>
+  body {
+    font-family: Arial;
+    background: #111;
+    color: white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+  }
+  .box {
+    width: 300px;
+    background: #222;
+    padding: 20px;
+    border-radius: 10px;
+  }
+  input, button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 6px;
+    border: none;
+  }
+  button {
+    background: #4a90e2;
+    color: white;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div class="box">
+  <h2 style="text-align:center;">Login</h2>
+
+  <input id="nickname" placeholder="Nickname">
+  <input id="password" placeholder="Password" type="password">
+  <button onclick="login()">Login</button>
+
+  <p id="result" style="text-align:center;margin-top:10px;"></p>
+</div>
+
+<script>
+async function login() {
+  const nickname = document.getElementById("nickname").value;
+  const password = document.getElementById("password").value;
+
+  const res = await fetch("https://script.google.com/macros/s/AKfycbz2vbEE8RJEPlgbmyVfObQ9CcAjFki4drcaJqa_BbGqcjk7bVoQ_OqItwUie7VgDS4tIw/exec", {
+    method: "POST",
+    body: JSON.stringify({ nickname, password }),
+    headers: { "Content-Type": "application/json" }
+  });
+
+  const data = await res.json();
+
+  if (data.success) {
+    document.getElementById("result").innerHTML =
+      "✔ 登录成功，Branch: " + data.branch;
+
+    // 登录成功跳转，例如 home.html
+    // location.href = "home.html?branch=" + encodeURIComponent(data.branch);
+  } else {
+    document.getElementById("result").innerHTML = "❌ 用户名或密码错误";
+  }
+}
+</script>
+
+</body>
+</html>
